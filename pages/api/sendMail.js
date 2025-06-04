@@ -13,14 +13,26 @@ const runMiddleware = (req, res, fn) => {
 };
 
 const validateInput = (name, password) => {
-  if (!name || typeof name !== 'string' || name.trim().length < 2) {
-    return 'Name must be a string with at least 2 characters';
+  if (
+    !name ||
+    typeof name !== 'string' ||
+    name.trim().length < 2 ||
+    /\s/.test(name) // checks for any whitespace
+  ) {
+    return 'Name must be a string with at least 2 characters and no spaces';
   }
-  if (!password || typeof password !== 'string' || password.length < 6) {
+
+  if (
+    !password ||
+    typeof password !== 'string' ||
+    password.length < 6
+  ) {
     return 'Password must be a string with at least 6 characters';
   }
+
   return null;
 };
+
 
 export default async function handler(req, res) {
   await runMiddleware(req, res, corsMiddleware);
