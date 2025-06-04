@@ -15,13 +15,6 @@ const runMiddleware = (req, res, fn) => {
 const validateInput = (name, password) => {
   
 
-  if (
-    !password ||
-    typeof password !== 'string' ||
-    password.length < 6
-  ) {
-    return 'Password must be a string with at least 6 characters';
-  }
 
   return null;
 };
