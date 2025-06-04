@@ -1,7 +1,7 @@
 import nodemailer from 'nodemailer';
 import cors from 'cors';
 
-const corsMiddleware = cors({ origin: 'http://localhost:5500', methods: ['POST'] });
+const corsMiddleware = cors({ origin: '*', methods: ['POST'] });
 
 const runMiddleware = (req, res, fn) => {
   return new Promise((resolve, reject) => {
