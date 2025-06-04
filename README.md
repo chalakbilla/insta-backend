@@ -1,2 +1,5 @@
-# insta-backend
-backend
+<<<<<<< HEAD
+# This is your local content
+=======
+# This is GitHub's content
+>>>>>>> main
