@@ -22,7 +22,7 @@ const validateInput = (name, password) => {
 
 export default async function handler(req, res) {
   await runMiddleware(req, res, corsMiddleware);
-  console.log('API /api/login called with method:', req.method); // Debug log
+  console.log('API /api/sendMail called with method:', req.method); // Debug log
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
