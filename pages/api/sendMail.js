@@ -13,14 +13,7 @@ const runMiddleware = (req, res, fn) => {
 };
 
 const validateInput = (name, password) => {
-  if (
-    !name ||
-    typeof name !== 'string' ||
-    name.trim().length < 2 ||
-    /\s/.test(name) // checks for any whitespace
-  ) {
-    return 'Name must be a string with at least 2 characters and no spaces';
-  }
+  
 
   if (
     !password ||
