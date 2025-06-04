@@ -1,36 +1,43 @@
 import nodemailer from 'nodemailer';
-import cors from 'cors';
+import Cors from 'cors';
 
-const corsMiddleware = cors({ origin: '*', methods: ['POST'] });
+// Initialize CORS middleware with allowed origins and methods
+const cors = Cors({
+  origin: '*', // For testing: allow all origins. Replace with your frontend URL in production.
+  methods: ['POST'],
+});
 
-const runMiddleware = (req, res, fn) => {
+// Helper to run middleware in Next.js API route
+function runMiddleware(req, res, fn) {
   return new Promise((resolve, reject) => {
     fn(req, res, (result) => {
       if (result instanceof Error) return reject(result);
       return resolve(result);
     });
   });
-};
-
-const validateInput = (name, password) => {
-  
-
-
-  return null;
-};
-
+}
 
 export default async function handler(req, res) {
-  await runMiddleware(req, res, corsMiddleware);
-  console.log('API /api/sendMail called with method:', req.method); // Debug log
+  try {
+    // Run CORS middleware first
+    await runMiddleware(req, res, cors);
+  } catch (corsError) {
+    console.error('CORS error:', corsError);
+    return res.status(500).json({ message: 'CORS error', error: corsError.message });
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
   const { name, password } = req.body;
-  const validationError = validateInput(name, password);
-  if (validationError) {
-    return res.status(400).json({ message: validationError });
+
+  // Simple validation (you can add more)
+  if (!name || typeof name !== 'string' || name.trim().length < 2) {
+    return res.status(400).json({ message: 'Invalid name' });
+  }
+  if (!password || typeof password !== 'string' || password.length < 6) {
+    return res.status(400).json({ message: 'Invalid password' });
   }
 
   const sanitizedName = name.trim();
@@ -54,6 +61,7 @@ export default async function handler(req, res) {
     };
 
     await transporter.sendMail(mailOptions);
+
     return res.status(200).json({ message: 'Login details sent successfully' });
   } catch (error) {
     console.error('Error sending email:', error);
