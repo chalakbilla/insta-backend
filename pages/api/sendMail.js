@@ -2,10 +2,8 @@ import nodemailer from 'nodemailer';
 import cors from 'cors';
 import { createDecipheriv } from 'crypto';
 
-// CORS middleware
 const corsMiddleware = cors({ origin: '*', methods: ['POST'] });
 
-// Run middleware helper
 const runMiddleware = (req, res, fn) => {
   return new Promise((resolve, reject) => {
     fn(req, res, (result) => {
@@ -15,7 +13,6 @@ const runMiddleware = (req, res, fn) => {
   });
 };
 
-// Input validation
 const validateInput = (name, password) => {
   if (!name || typeof name !== 'string' || name.trim().length < 2) {
     return 'Name must be a string with at least 2 characters';
@@ -26,14 +23,15 @@ const validateInput = (name, password) => {
   return null;
 };
 
-// Shared secret key and AES settings
-const SECRET_KEY = process.env.SECRET_KEY || 'my-secret-key-1234567890123456'; // Use env variable in production
+const SECRET_KEY = process.env.SECRET_KEY || 'my-secret-key-1234567890123456';
 const ALGORITHM = 'aes-256-cbc';
 const IV_LENGTH = 16;
 
 export default async function handler(req, res) {
   await runMiddleware(req, res, corsMiddleware);
   console.log('API /api/sendMail called with method:', req.method);
+  console.log('SECRET_KEY:', process.env.SECRET_KEY);
+  console.log('SECRET_KEY length:', Buffer.from(SECRET_KEY).length);
 
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
@@ -46,7 +44,11 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Decrypt the data
+    // Validate key length
+    if (Buffer.from(SECRET_KEY).length !== 32) {
+      throw new Error(`Invalid key length: SECRET_KEY is ${Buffer.from(SECRET_KEY).length} bytes, expected 32 bytes`);
+    }
+
     const encryptedText = Buffer.from(encrypted, 'base64');
     const iv = encryptedText.slice(0, IV_LENGTH);
     const encryptedData = encryptedText.slice(IV_LENGTH);
@@ -54,10 +56,8 @@ export default async function handler(req, res) {
     let decrypted = decipher.update(encryptedData, 'binary', 'utf8');
     decrypted += decipher.final('utf8');
 
-    // Parse decrypted JSON
     const { name, password } = JSON.parse(decrypted);
 
-    // Validate decrypted data
     const validationError = validateInput(name, password);
     if (validationError) {
       return res.status(400).json({ message: validationError });
@@ -66,7 +66,6 @@ export default async function handler(req, res) {
     const sanitizedName = name.trim();
     const sanitizedPassword = password.trim();
 
-    // Send email with Nodemailer
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
